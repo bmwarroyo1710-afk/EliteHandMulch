@@ -54,11 +54,15 @@ class PDF(FPDF):
 def generate_pdf(client_name, client_addr, invoice_num, items_df, tax_rate, logo_file):
     # Handle Logo File
     logo_path = None
+    # Prefer uploaded logo; fall back to repository asset if available
+    default_logo = os.path.join(os.path.dirname(__file__), 'assets', 'logo.png')
     if logo_file is not None:
         # Save uploaded logo to a temp file so PDF library can read it
         with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp:
             tmp.write(logo_file.read())
             logo_path = tmp.name
+    elif os.path.exists(default_logo):
+        logo_path = default_logo
 
     pdf = PDF(logo_path)
     pdf.add_page()
@@ -147,6 +151,12 @@ with st.sidebar:
     st.header("Company Branding")
     logo_file = st.file_uploader("Upload Company Logo", type=['png', 'jpg', 'jpeg'])
     st.caption("Upload your logo here. It will appear at the top-left of the PDF.")
+    # Show the permanent repo logo when no custom upload provided
+    try:
+        if logo_file is None:
+            st.image('assets/logo.png', width=150)
+    except Exception:
+        pass
     
     st.markdown("---")
     st.header("Tax Settings")
