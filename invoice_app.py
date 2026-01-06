@@ -190,7 +190,7 @@ default_data = pd.DataFrame([
 edited_df = st.data_editor(
     default_data, 
     num_rows="dynamic", 
-    use_container_width=True,
+    width='stretch',
     column_config={
         "Price": st.column_config.NumberColumn(format="$%.2f"),
         "Qty": st.column_config.NumberColumn(format="%.1f")
@@ -199,12 +199,16 @@ edited_df = st.data_editor(
 
 st.markdown("---")
 
-if st.button("Generate Invoice PDF", type="primary", use_container_width=True):
+if st.button("Generate Invoice PDF", type="primary", width='stretch'):
     if not client_name:
         st.error("Please enter a Client Name.")
     else:
         pdf_bytes = generate_pdf(client_name, client_addr, invoice_num, edited_df, tax_rate, logo_file, invoice_date)
-        
+
+        # Ensure we pass raw bytes to Streamlit (convert bytearray or memoryview)
+        if isinstance(pdf_bytes, (bytearray, memoryview)):
+            pdf_bytes = bytes(pdf_bytes)
+
         st.success("✅ Invoice Generated Successfully!")
         st.download_button(
             label="Download Invoice PDF",
