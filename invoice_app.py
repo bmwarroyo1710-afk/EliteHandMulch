@@ -51,7 +51,7 @@ class PDF(FPDF):
         self.set_font('Arial', 'I', 8)
         self.cell(0, 10, f'Page {self.page_no()}', 0, 0, 'C')
 
-def generate_pdf(client_name, client_addr, invoice_num, items_df, tax_rate, logo_file):
+def generate_pdf(client_name, client_addr, invoice_num, items_df, tax_rate, logo_file, invoice_date=None):
     # Handle Logo File
     logo_path = None
     # Prefer uploaded logo; fall back to repository asset if available
@@ -74,7 +74,7 @@ def generate_pdf(client_name, client_addr, invoice_num, items_df, tax_rate, logo
     pdf.ln(10)
     
     pdf.cell(100, 5, f"Bill To: {client_name}", 0, 0)
-    pdf.cell(90, 5, f"Date: {date.today().strftime('%B %d, %Y')}", 0, 1, 'R')
+    pdf.cell(90, 5, f"Date: {invoice_date.strftime('%B %d, %Y')}", 0, 1, 'R')
     
     pdf.cell(100, 5, f"Address: {client_addr}", 0, 0)
     pdf.cell(90, 5, f"Invoice #: {invoice_num}", 0, 1, 'R')
@@ -138,7 +138,10 @@ def generate_pdf(client_name, client_addr, invoice_num, items_df, tax_rate, logo
     if logo_path:
         os.remove(logo_path)
 
-    return pdf.output(dest='S').encode('latin-1')
+    out = pdf.output(dest='S')
+    if isinstance(out, str):
+        return out.encode('latin-1')
+    return out
 
 # --- STREAMLIT UI ---
 st.set_page_config(page_title="Elite Hand Mulch Invoicer", layout="wide")
@@ -173,7 +176,7 @@ with col1:
 with col2:
     st.subheader("Invoice Details")
     invoice_num = st.text_input("Invoice Number", value="1001")
-    st.info(f"Date: {date.today().strftime('%B %d, %Y')}")
+    invoice_date = st.date_input("Invoice Date", value=date.today())
 
 st.markdown("### Line Items")
 
@@ -200,7 +203,7 @@ if st.button("Generate Invoice PDF", type="primary", use_container_width=True):
     if not client_name:
         st.error("Please enter a Client Name.")
     else:
-        pdf_bytes = generate_pdf(client_name, client_addr, invoice_num, edited_df, tax_rate, logo_file)
+        pdf_bytes = generate_pdf(client_name, client_addr, invoice_num, edited_df, tax_rate, logo_file, invoice_date)
         
         st.success("✅ Invoice Generated Successfully!")
         st.download_button(
